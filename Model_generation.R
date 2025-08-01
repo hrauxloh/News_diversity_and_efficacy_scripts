@@ -10,59 +10,59 @@ library(SYNCSA)
 library(tidyr)
 
 
-# Tracking Data ----
-#Step 1
-#Collecting all domain, deeplink, political views, over 2 seconds = tracking_step_1
-## Connecting to database ----
-total_tracking_activity_0_total_june2025 <- read_csv("C:/Users/rauxloha/poltrack2/Paper_div/Preprocessing/Diversity_paper_preprocessing/total_tracking_activity_0_total_june2025.csv", 
-                                                     col_types = cols(panelist_id = col_character()))
-colnames(total_tracking_activity_0_total_june2025)[1] <- "psid_tracking"
-
-
-domains <- readRDS("C:/Users/rauxloha/Downloads/GONDv3_domains.rds")
-con_tracking <- dbConnect(RPostgres::Postgres(), 
-                          dbname = 'poltrack', 
-                          host = '134.102.58.175', 
-                          port = 5432, 
-                          user = 'poltrack_read',
-                          password = Sys.getenv("poltrack_pwd"))
-dbListTables(con_tracking)
-
-domains <- paste0("'", trimws(domains$domain), "'", collapse = ",")
-
-
-query <- paste0("
-  SELECT v.*
-  FROM views_new v
-  JOIN content_new c
-    ON v.url_hash = c.url_hash
-  WHERE domain IN (", domains, ")
-    AND v.is_news_deep_link = TRUE
-    AND v.active_seconds >= 2
-    AND c.is_pol_ml = 'political'
-")
-
-# query and save the result as tracking_all_0
-tracking_data_0 <- dbGetQuery(con_tracking, query) #450,473
-
-
-dbDisconnect(con_tracking)
-
-
-
-#Step 2 
-#Grouping participants by number of visits from tracking_data_0 = Participant_views
-participant_views_freq <- tracking_data_0 %>%
-  group_by(psid_tracking) %>%
-  summarise(frequency = n()) %>%
-  arrange(desc(frequency))
-
-#Step 3 
-#Filtering tracking_step_1 by participants with over 30 views 
-tracking_data_step2 <- tracking_data_0 %>%
-  group_by(psid_tracking) %>%
-  filter(n() > 30) #433,831
-colnames(tracking_data_step2)[1] <- "psid_tracking"
+# # Tracking Data ----
+# #Step 1
+# #Collecting all domain, deeplink, political views, over 2 seconds = tracking_step_1
+# ## Connecting to database ----
+# total_tracking_activity_0_total_june2025 <- read_csv("C:/Users/rauxloha/poltrack2/Paper_div/Preprocessing/Diversity_paper_preprocessing/total_tracking_activity_0_total_june2025.csv", 
+#                                                      col_types = cols(panelist_id = col_character()))
+# colnames(total_tracking_activity_0_total_june2025)[1] <- "psid_tracking"
+# 
+# 
+# domains <- readRDS("C:/Users/rauxloha/Downloads/GONDv3_domains.rds")
+# con_tracking <- dbConnect(RPostgres::Postgres(), 
+#                           dbname = 'poltrack', 
+#                           host = '134.102.58.175', 
+#                           port = 5432, 
+#                           user = 'poltrack_read',
+#                           password = Sys.getenv("poltrack_pwd"))
+# dbListTables(con_tracking)
+# 
+# domains <- paste0("'", trimws(domains$domain), "'", collapse = ",")
+# 
+# 
+# query <- paste0("
+#   SELECT v.*
+#   FROM views_new v
+#   JOIN content_new c
+#     ON v.url_hash = c.url_hash
+#   WHERE domain IN (", domains, ")
+#     AND v.is_news_deep_link = TRUE
+#     AND v.active_seconds >= 2
+#     AND c.is_pol_ml = 'political'
+# ")
+# 
+# # query and save the result as tracking_all_0
+# tracking_data_0 <- dbGetQuery(con_tracking, query) #450,473
+# 
+# 
+# dbDisconnect(con_tracking)
+# 
+# 
+# colnames(tracking_data_0)[1] <- "psid_tracking"
+# 
+# #Step 2 
+# #Grouping participants by number of visits from tracking_data_0 = Participant_views
+# participant_views_freq <- tracking_data_0 %>%
+#   group_by(psid_tracking) %>%
+#   summarise(frequency = n()) %>%
+#   arrange(desc(frequency))
+# 
+# #Step 3 
+# #Filtering tracking_step_1 by participants with over 30 views 
+# tracking_data_step2 <- tracking_data_0 %>%
+#   group_by(psid_tracking) %>%
+#   filter(n() > 30) #433,831
 
 
 #Calculating Rao ----
@@ -99,8 +99,9 @@ rao_scores_df <- data.frame(
 colnames(rao_scores_df)[2] <- "FunRao"
 
 # Survey data ----
-#Step 1 
-#loading in survey data 
+#Step 1
+#loading in survey data
+survey_filtered <- readRDS("C:/Users/rauxloha/poltrack2/Fresh_start_diversity_scripts/Fresh Start Diversity Scripts/survey_data.Rds")
 survey_data <- survey_filtered
 colnames(survey_data)[1] <- "psid_survey"
 psid_to_remove <- c(
@@ -117,15 +118,16 @@ psid_to_remove <- c(
 # Drop survey_data rows
 survey_data <- survey_data[!survey_data$psid_survey %in% psid_to_remove, ]
 
-survey_data = survey_data %>% 
+survey_data = survey_data %>%
   mutate(psid_survey = str_remove_all(psid_survey, ",00"))
 
 # Combining Tracking & Survey ----
+mapping_consolidated <- readRDS("C:/Users/rauxloha/poltrack2/mapping_consolidated.rds")
 survey_data_mapped <- survey_data %>% left_join(mapping_consolidated,
                                  by= "psid_survey")
 
 
-full_data_sample <- full_data_sample %>% inner_join(total_tracking_activity_0_total_june2025,
+full_data_sample <- survey_data_mapped %>% inner_join(total_tracking_activity_0_total_june2025,
                                                     by = "psid_tracking") #954
 
 full_data_sample <- full_data_sample %>% inner_join(rao_scores_df,
@@ -184,8 +186,88 @@ quartiles_model <- lm(
 )
 summary(quartiles_model)
 
+##Quartiles model summary statistics ----
 
 
+
+working_data_sample_summary <- full_data_sample[, c("psid_tracking", "Internal",
+                                            "age",
+                                            "edu", "gender", "FunRao", "unique_days",
+                                            "log_unique_days", "offline_freq")]
+
+working_data_sample_summary <- na.omit(working_data_sample_summary) #728
+
+con_tracking <- dbConnect(RPostgres::Postgres(),
+                          ########,
+                          ########,
+                          ########,
+                          ########,
+                          ########
+                          )
+dbListTables(con_tracking)
+
+panelist_ids_summary <- paste0("'", trimws(working_data_sample_summary$psid_tracking), "'", collapse = ",")
+
+
+query <- paste0("
+  SELECT
+    v.panelist_id,
+    COUNT(*) AS row_count,
+    COUNT(DISTINCT domain) AS unique_domain_count
+  FROM views_new v
+  JOIN content_new c
+    ON v.url_hash = c.url_hash
+  WHERE domain IN (", domains, ")
+    AND v.is_news_deep_link = TRUE
+    AND v.active_seconds >= 2
+    AND c.is_pol_ml = 'political'
+    AND v.panelist_id IN (", panelist_ids_summary, ")
+  GROUP BY v.panelist_id
+")
+
+tracking_counts <- dbGetQuery(con_tracking, query)
+
+
+dbDisconnect(con_tracking)
+
+colnames(tracking_counts)[1] <- "psid_tracking"
+
+working_data_sample_summary <- working_data_sample_summary %>% inner_join(tracking_counts,
+                                           by = "psid_tracking") #954
+
+knots_quartiles <- quantile(working_data_sample_summary$FunRao, probs = c(0.25, 0.5, 0.75), na.rm = TRUE)
+
+# Create a quartile factor column
+working_data_sample_summary <- working_data_sample_summary %>%
+  mutate(
+    FunRao_quartile = cut(
+      FunRao,
+      breaks = c(-Inf, knots_quartiles, Inf),
+      labels = c("Q1", "Q2", "Q3", "Q4"),
+      right = TRUE
+    )
+  )
+
+# Create separate dataframes for each quartile
+df_Q1 <- filter(working_data_sample_summary, FunRao_quartile == "Q1")
+df_Q2 <- filter(working_data_sample_summary, FunRao_quartile == "Q2")
+df_Q3 <- filter(working_data_sample_summary, FunRao_quartile == "Q3")
+df_Q4 <- filter(working_data_sample_summary, FunRao_quartile == "Q4")
+summary(df_Q1)
+sd(df_Q1$row_count)
+sd(df_Q1$unique_domain_count)
+
+summary(df_Q2)
+sd(df_Q2$row_count)
+sd(df_Q2$unique_domain_count)
+
+summary(df_Q3)
+sd(df_Q3$row_count)
+sd(df_Q3$unique_domain_count)
+
+summary(df_Q4)
+sd(df_Q4$row_count)
+sd(df_Q4$unique_domain_count)
 
 
 ##Cublic Spline Cluster ----
@@ -298,8 +380,7 @@ working_data_sample_subset_150plus <- working_data_sample_subset_150plus %>%
                 .names = "{.col}_centered"))
 ##Null ----
 null_model_subset_150plus <- lm(
-  formula = Internal ~  
-    age_centered + gender + edu_centered + 
+  formula = Internal ~  age_centered + gender + edu_centered + 
     log_unique_days + offline_freq_centered,
   data = working_data_sample_subset_150plus
 )
@@ -327,3 +408,19 @@ quartiles_model_subset_150plus <- lm(
   data = working_data_sample_subset_150plus
 )
 summary(quartiles_model_subset_150plus)
+
+
+#Saving Models ----
+save(
+  null_model,
+  linear_model,
+  quartiles_model,
+  clusters_model,
+  null_model_subset_50plus,
+  linear_model_subset_50plus,
+  quartiles_model_subset_50plus,
+  null_model_subset_150plus,
+  linear_model_subset_150plus,
+  quartiles_model_subset_150plus,
+  file = "regression_models.RData"
+)
