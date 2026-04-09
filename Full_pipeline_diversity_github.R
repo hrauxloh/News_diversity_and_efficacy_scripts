@@ -21,7 +21,7 @@ total_tracking_activity_0_total_june2025 <- read_csv( #######
 colnames(total_tracking_activity_0_total_june2025)[1] <- "psid_tracking"
 
 
-domains <- readRDS("C:/Users/rauxloha/Downloads/GONDv3_domains.rds")
+domains <- readRDS("GONDv3_domains.rds")
 con_tracking <- dbConnect(RPostgres::Postgres(),
                           ########,
                           ########,
@@ -71,7 +71,7 @@ tracking_data_step2 <- tracking_data_0 %>%
 #Calculating Rao ----
 
 ##Loading domain attributes ----
-domain_attributes <- read_csv("C:/Users/rauxloha/poltrack2/Paper_div/Preprocessing/Diversity_paper_preprocessing/domain_attributes_0_june2025.csv")
+domain_attributes <- read_csv("domain_attributes_0_june2025.csv")
 
 domain_attributes <- domain_attributes %>%
   filter(!(domain == "yahoo.com" & news_type == "portal"))
@@ -104,7 +104,7 @@ colnames(rao_scores_df)[2] <- "FunRao"
 # Survey data ----
 #Step 1
 #loading in survey data
-survey_filtered <- readRDS("C:/Users/rauxloha/poltrack2/Fresh_start_diversity_scripts/Fresh Start Diversity Scripts/survey_data.Rds")
+survey_filtered <- readRDS("survey_data.Rds")
 survey_data <- survey_filtered
 colnames(survey_data)[1] <- "psid_survey"
 psid_to_remove <- c(
@@ -118,7 +118,7 @@ survey_data = survey_data %>%
   mutate(psid_survey = str_remove_all(psid_survey, ",00"))
 
 # Combining Tracking & Survey ----
-mapping_consolidated <- readRDS("C:/Users/rauxloha/poltrack2/mapping_consolidated.rds")
+mapping_consolidated <- readRDS("mapping_consolidated.rds")
 survey_data_mapped <- survey_data %>% left_join(mapping_consolidated,
                                                 by= "psid_survey")
 
