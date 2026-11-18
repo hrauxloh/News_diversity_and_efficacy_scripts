@@ -1,0 +1,45 @@
+# Revision analysis (proposed restructure)
+
+Proposed re-analysis responding to the reviewer comments on the manuscript
+"The more news sources, the better for democracy?". It **adds** a folder; the
+original scripts are unchanged.
+
+> **Status: written but not yet run.** The scripts were drafted without access to the
+> data or to an R installation, so they have not been executed. Expect small
+> errors on first run (column names, object names). Please run and fix before use.
+
+## How to run
+Run the existing pipeline (`Full_pipeline_diversity_github.R`) so that these objects exist in
+the R session: `full_data_sample`, `comm`, `traits_mat`. Then, from the repository root:
+
+```r
+source("revision_analysis/01_prepare_data.R")
+source("revision_analysis/02_alt_diversity_measures.R")
+source("revision_analysis/03_main_models.R")
+source("revision_analysis/04_wave_and_robustness.R")
+```
+Outputs (tables and figures) go to `revision_analysis/output/` and are git-ignored.
+Packages: dplyr, splines, ggplot2, sandwich, lmtest, SYNCSA.
+
+## What changed and why
+| Reviewer comment | Change |
+|---|---|
+| (1) hypotheses vs results | One primary model sequence: M0 controls, M1 linear, M2 quadratic (tests the inverted U directly, with turning point), M3 natural spline (flexible check). One pre-specified estimand: predicted efficacy at the 90th vs the 10th percentile of diversity. |
+| (10) spline interpretation | Results are read from the fitted curve and contrasts with HC3 CIs (`fitted_curves.png`, `contrasts.csv`), never from individual spline coefficients. The model equation is written in `03_main_models.R`. |
+| (12) spline vs linear | Nested F-tests, AIC, BIC and repeated 10-fold cross-validated RMSE for all models (`model_comparison.csv`, `nested_tests.csv`); sensitivity to spline df 2 to 6. |
+| (9) wave and timing | Wave indicator, diversity x wave, and W1-only / W4-only fits. W4 participants have their efficacy measured after the tracking period. A fully time-aligned measure (diversity computed only from tracking before each participant's survey) still needs visit timestamps and is not implemented. Inter-item correlation of the two efficacy items is printed. |
+| (3), (7) what the measure captures | Shannon, Gini-Simpson, number of outlets, and Rao split into news-type-only and ideology-only versions; joint models and Rao controlling for Shannon plus outlet count (`alternative_measures.csv`). |
+| Forking paths | The three "samples" become coverage restrictions in an appendix-style table (`coverage_restrictions.csv`) instead of choosing the best-performing sample. |
+
+## Things in the existing code worth checking
+1. **`age` looks like birth year** (e.g. 1958 in `head(full_data_sample)`). The original models standardise
+   it as is, so the "Age" coefficient (+0.44) would then mean *later birth year = higher efficacy*, i.e. the
+   opposite of an age effect. `01_prepare_data.R` converts it to age in years when all values exceed 1900.
+2. **`log_unique_days` is the log of the number of unique tracking days**, but the manuscript and Table 1
+   call it "log of total visits". `02_alt_diversity_measures.R` adds true visit counts and outlet counts.
+3. **Wave is not in any model** in the original scripts.
+4. **The 2-second visit filter** mentioned in the manuscript does not appear in these scripts.
+5. The Orientation dummies use `Center` as the reference level, so Left vs Right is twice as far apart
+   (two columns differ) as Center vs Left or Right (one column). State this in the Methods or change the coding.
+6. `social_freq` and `socialmedia_freq` are assumed to be interpersonal political talk and social media use,
+   inferred from the column names. Check the questionnaire.
