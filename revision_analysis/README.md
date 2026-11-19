@@ -16,11 +16,15 @@ against the codebook wording of the two items), drops External, and shifts the r
 (so Internal runs 0-20). **All earlier results (Table 1 etc.) used the old outcome and must be re-run.**
 
 ## How to run
-First re-import the survey with `00_import_clean_survey.R` (needs your `con_survey` and
-`SQL_query_function`), save the result outside the repository, and point the pipeline's
-`readRDS("survey_data.Rds")` to the new file. Then run the existing pipeline
-(`Full_pipeline_diversity_github.R`) so that these objects exist in
-the R session: `full_data_sample`, `comm`, `traits_mat`. Then, from the repository root:
+1. Re-import the survey with `00_import_clean_survey.R` (needs your `con_survey` and
+   `SQL_query_function`) and save `survey_data_v2.Rds` outside the repository.
+2. Run the existing pipeline (`Full_pipeline_diversity_github.R`) **only up to the Rao scores**
+   (about line 102), so that `rao_scores_df`, `total_tracking_activity_0_total_june2025`, `comm` and
+   `traits_mat` exist in the session (and `mapping_consolidated`, or the file `mapping_consolidated.rds`).
+   The survey part of the old pipeline is no longer used.
+3. `01_prepare_data.R` then reads `survey_data_v2.Rds` (set `SURVEY_V2 <- "path/to/survey_data_v2.Rds"`
+   first if it is not in the working directory), joins survey, tracking and Rao data into `full_data_sample`,
+   and builds `analysis_data`. Then, from the repository root:
 
 ```r
 source("revision_analysis/01_prepare_data.R")

@@ -1,10 +1,69 @@
 # 01_prepare_data.R -------------------------------------------------------
-# Builds `analysis_data` from `full_data_sample` (created by
-# Full_pipeline_diversity_github.R, i.e. survey + tracking + Rao score).
-# Run from the repository root. Nothing here reads raw tracking data.
+# Reads the re-imported survey (survey_data_v2.Rds, made by 00_import_clean_survey.R),
+# joins it to the tracking data and Rao scores, and builds `analysis_data`.
+# It REPLACES the survey part of Full_pipeline_diversity_github.R, so run that pipeline
+# only up to the point where `rao_scores_df` has been created (about line 102).
+# Run from the repository root.
+#
+# Needed in the R session before running:
+#   rao_scores_df                               (participant id + FunRao, from the pipeline)
+#   total_tracking_activity_0_total_june2025    (psid_tracking, unique_days, first_day, last_day, ...)
+#   mapping_consolidated                        (survey id <-> tracking id), or the file
+#                                               mapping_consolidated.rds in the working directory
+# Optional: psid_to_remove (the ids excluded in the original pipeline).
 
 source(file.path(if (exists("RA_DIR")) RA_DIR else "revision_analysis", "helpers.R"))
-stopifnot(exists("full_data_sample"))
+SURVEY_V2 <- if (exists("SURVEY_V2")) SURVEY_V2 else "survey_data_v2.Rds"   # set the full path if needed
+
+# --- Build full_data_sample from the new survey file ------------------------
+stopifnot(file.exists(SURVEY_V2))
+needed <- c("rao_scores_df", "total_tracking_activity_0_total_june2025")
+missing_obj <- needed[!vapply(needed, exists, logical(1))]
+if (length(missing_obj) > 0) stop("Run the pipeline up to the Rao scores first. Missing: ",
+                                  paste(missing_obj, collapse = ", "))
+if (!exists("mapping_consolidated")) {
+  stopifnot(file.exists("mapping_consolidated.rds"))
+  mapping_consolidated <- readRDS("mapping_consolidated.rds")
+}
+
+# Ids can be numeric (16 digits -> scientific notation when converted), so format them safely
+id_to_chr <- function(x) {
+  if (is.numeric(x)) x <- format(x, scientific = FALSE, trim = TRUE)
+  as.character(x)
+}
+
+survey_data <- readRDS(SURVEY_V2)
+colnames(survey_data)[1] <- "psid_survey"            # the id is the first column
+survey_data$psid_survey <- id_to_chr(survey_data$psid_survey)
+message("Survey file: ", nrow(survey_data), " rows; ",
+        sum(!is.na(survey_data$Internal)), " with Internal efficacy")
+
+if (exists("psid_to_remove")) {
+  survey_data <- survey_data[!survey_data$psid_survey %in% as.character(psid_to_remove), ]
+} else {
+  message("psid_to_remove not found: no ids excluded (the original pipeline excluded a list of ids).")
+}
+survey_data$psid_survey <- stringr::str_remove_all(survey_data$psid_survey, ",00")
+
+map_ids <- mapping_consolidated
+map_ids$psid_survey   <- id_to_chr(map_ids$psid_survey)
+map_ids$psid_tracking <- id_to_chr(map_ids$psid_tracking)
+tracking_ids <- total_tracking_activity_0_total_june2025
+tracking_ids$psid_tracking <- id_to_chr(tracking_ids$psid_tracking)
+rao_ids <- rao_scores_df
+rao_ids$psid_tracking <- id_to_chr(rao_ids$psid_tracking)
+
+full <- survey_data %>% left_join(map_ids, by = "psid_survey")
+message("After joining the id mapping: ", sum(!is.na(full$psid_tracking)), " with a tracking id")
+full <- full %>% inner_join(tracking_ids, by = "psid_tracking")
+message("After joining tracking activity: ", nrow(full), " rows")
+full <- full %>% inner_join(rao_ids, by = "psid_tracking")
+message("After joining Rao scores: ", nrow(full), " rows (the original pipeline had 954)")
+if (anyDuplicated(full$psid_survey) > 0) warning("Duplicated survey ids after the joins.")
+
+full$edu[full$edu == -77] <- NA
+full$log_unique_days <- log(full$unique_days)
+full_data_sample <- full
 
 d <- full_data_sample
 
