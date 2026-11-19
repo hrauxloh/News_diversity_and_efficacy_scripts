@@ -99,7 +99,11 @@ if (any(d$wave == "both", na.rm = TRUE)) {
 # --- Demographics ---------------------------------------------------------
 # `age` looks like BIRTH YEAR (e.g. 1958), not age. Convert if so.
 d$edu[d$edu == -77] <- NA
-if (all(d$age[!is.na(d$age)] > 1900)) {
+if (median(d$age, na.rm = TRUE) > 1900) {
+  # Values <= 1900 (e.g. 0) are invalid birth years; they would otherwise stop the conversion
+  n_bad_age <- sum(d$age <= 1900, na.rm = TRUE)
+  if (n_bad_age > 0) message(n_bad_age, " invalid birth year(s) (<= 1900) set to missing")
+  d$age[!is.na(d$age) & d$age <= 1900] <- NA
   message("`age` holds birth years; converting to age in years (survey year 2022 for W1, 2023 for W4).")
   d$birth_year <- d$age
   d$age <- ifelse(d$wave == "W1", 2022, 2023) - d$birth_year
