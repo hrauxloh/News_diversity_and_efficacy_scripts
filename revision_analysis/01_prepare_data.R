@@ -56,3 +56,17 @@ d$socialmedia_z <- zs(d$socialmedia_freq)
 
 analysis_data <- d
 SD_OUTCOME <- sd(analysis_data$Internal)
+
+# --- Summary statistics ---------------------------------------------------
+d <- analysis_data
+nrow(d)
+table(d$wave)
+summary(d$age); sd(d$age)
+table(d$gender)
+summary(d$edu)
+summary(d$Internal); sd(d$Internal)
+summary(d$FunRao)
+summary(d$offline_freq)
+summary(d$log_unique_days)
+colSums(is.na(d[, c("social_z", "socialmedia_z", "unique_days")]))
+round(cor(d[, c("FunRao", "age", "edu", "log_unique_days", "offline_freq", "Internal")]), 2)
