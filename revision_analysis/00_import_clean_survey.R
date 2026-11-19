@@ -45,7 +45,12 @@ survey <- SQL_query_function(variables_to_query, waves, "YES")
 # --- Basic cleaning ------------------------------------------------------------
 survey[survey == "-77.0"] <- NA                          # "not answered"
 survey <- survey[, colSums(is.na(survey)) != nrow(survey)]   # drop all-NA columns
-survey <- survey %>% mutate(across(-p_0002, ~ as.numeric(.)))
+# The participant ID column was called p_0002 in the old database and is id_survey now.
+ID_COL <- intersect(c("id_survey", "p_0002"), names(survey))[1]
+if (is.na(ID_COL)) stop("No ID column found (looked for id_survey, p_0002). Columns: ",
+                        paste(head(names(survey), 10), collapse = ", "))
+message("Using ID column: ", ID_COL)
+survey <- survey %>% mutate(across(-all_of(ID_COL), ~ as.numeric(.)))
 
 # --- Aggregate media-use variables across waves ----------------------------------
 row_agg <- function(df, base, how) {
@@ -75,8 +80,9 @@ stopifnot(all(item_cols %in% names(survey)))
 for (col in item_cols) { message("Cleaning ", col); survey[[col]] <- clean_item(survey[[col]]) }
 
 # --- Keep needed columns --------------------------------------------------------
-columns_list <- c("p_0002", "age", "edu", "gender", item_cols, exposure_vars, freq_vars)
+columns_list <- c(ID_COL, "age", "edu", "gender", item_cols, exposure_vars, freq_vars)
 survey_filtered <- survey %>% dplyr::select(all_of(columns_list))
+# The pipeline renames the FIRST column to psid_survey, so the ID must stay first.
 
 survey_filtered <- survey_filtered %>%
   mutate(
