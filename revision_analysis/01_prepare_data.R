@@ -118,7 +118,11 @@ if (median(d$age, na.rm = TRUE) > 1900) {
   d$birth_year <- d$age
   d$age <- ifelse(d$wave == "W1", 2022, 2023) - d$birth_year
 }
-d$gender <- factor(d$gender)
+# Gender: female (code 2) vs not female (code 1 = male; code 3 = other, only 2 people).
+# Missing stays missing. The coefficient is labelled genderfemale in the models.
+d$gender <- factor(ifelse(is.na(d$gender), NA_character_,
+                          ifelse(d$gender == 2, "female", "not female")),
+                   levels = c("not female", "female"))
 
 # --- Analysis sample (complete cases on the core variables) ---------------
 core <- c("Internal", "age", "gender", "edu", "FunRao", "log_unique_days",
