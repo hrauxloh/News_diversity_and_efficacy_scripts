@@ -9,10 +9,14 @@
 
 source(file.path(if (exists("RA_DIR")) RA_DIR else "revision_analysis", "helpers.R"))
 stopifnot(exists("analysis_data"))
-analysis_data$gender <- factor(
-  ifelse(is.na(analysis_data$gender), NA_character_,
-         ifelse(analysis_data$gender == 2, "female", "not female")),
-  levels = c("not female", "female"))
+# Recode gender only if it is still the original numeric code (1/2/3). Script 01 already
+# recodes it; running this on an already recoded factor would turn everyone into "not female".
+if (!(is.factor(analysis_data$gender) && all(c("not female", "female") %in% levels(analysis_data$gender)))) {
+  analysis_data$gender <- factor(
+    ifelse(is.na(analysis_data$gender), NA_character_,
+           ifelse(analysis_data$gender == 2, "female", "not female")),
+    levels = c("not female", "female"))
+}
 table(analysis_data$gender)
 d <- analysis_data
 
