@@ -9,6 +9,11 @@
 
 source(file.path(if (exists("RA_DIR")) RA_DIR else "revision_analysis", "helpers.R"))
 stopifnot(exists("analysis_data"))
+analysis_data$gender <- factor(
+  ifelse(is.na(analysis_data$gender), NA_character_,
+         ifelse(analysis_data$gender == 2, "female", "not female")),
+  levels = c("not female", "female"))
+table(analysis_data$gender)
 d <- analysis_data
 
 SPLINE_DF <- 4   # df = 4 puts knots at the 25th/50th/75th percentiles (as in the original models)
