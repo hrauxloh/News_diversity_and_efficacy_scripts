@@ -111,6 +111,6 @@ write.csv(desc, file.path(OUT_DIR, "rao_descriptives.csv"), row.names = FALSE)
 write.csv(as.data.frame(table(quartile = quart)), file.path(OUT_DIR, "rao_quartile_counts.csv"), row.names = FALSE)
 
 # --- Inter-item correlation of the two efficacy items (comment 9) ----------
-r <- cor(d$poleffic1, d$poleffic2, use = "complete.obs")
+r <- cor(d$poleffic2, d$poleffic4, use = "complete.obs")   # the two internal-efficacy items
 message("Inter-item correlation r = ", round(r, 2), "; Spearman-Brown (2-item alpha) = ",
         round(2 * r / (1 + r), 2))

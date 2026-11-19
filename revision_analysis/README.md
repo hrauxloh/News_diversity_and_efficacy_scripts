@@ -8,8 +8,18 @@ original scripts are unchanged.
 > data or to an R installation, so they have not been executed. Expect small
 > errors on first run (column names, object names). Please run and fix before use.
 
+## Important correction: which items make up internal efficacy
+`poleffic1` is an **external** efficacy item ("how much does the political system give people like
+you a say"). The old code defined `Internal = poleffic1 + poleffic2`, which mixes an external and an
+internal item. `00_import_clean_survey.R` defines `Internal = poleffic2 + poleffic4` (to be verified
+against the codebook wording of the two items), drops External, and shifts the raw 1-11 codes to 0-10
+(so Internal runs 0-20). **All earlier results (Table 1 etc.) used the old outcome and must be re-run.**
+
 ## How to run
-Run the existing pipeline (`Full_pipeline_diversity_github.R`) so that these objects exist in
+First re-import the survey with `00_import_clean_survey.R` (needs your `con_survey` and
+`SQL_query_function`), save the result outside the repository, and point the pipeline's
+`readRDS("survey_data.Rds")` to the new file. Then run the existing pipeline
+(`Full_pipeline_diversity_github.R`) so that these objects exist in
 the R session: `full_data_sample`, `comm`, `traits_mat`. Then, from the repository root:
 
 ```r

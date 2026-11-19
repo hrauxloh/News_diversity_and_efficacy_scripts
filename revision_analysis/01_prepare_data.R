@@ -9,12 +9,14 @@ stopifnot(exists("full_data_sample"))
 d <- full_data_sample
 
 # --- Outcome and survey wave ---------------------------------------------
-# In the data Internal = poleffic1 + poleffic2 (two 0-10 items, range 0-20).
-bad <- sum(d$Internal != d$poleffic1 + d$poleffic2, na.rm = TRUE)
-message("Rows where Internal != poleffic1 + poleffic2: ", bad, " (expected 0)")
+# Internal efficacy = poleffic2 + poleffic4 (two items on 0-10, range 0-20).
+# Produced by 00_import_clean_survey.R (raw codes 1-11 shifted to 0-10).
+bad <- sum(d$Internal != d$poleffic2 + d$poleffic4, na.rm = TRUE)
+message("Rows where Internal != poleffic2 + poleffic4: ", bad, " (expected 0)")
+message("Range of Internal: ", paste(range(d$Internal, na.rm = TRUE), collapse = " to "), " (expected within 0 to 20)")
 
-has_w1 <- !is.na(d$poleffic1_W1) & !is.na(d$poleffic2_W1)
-has_w4 <- !is.na(d$poleffic1_W4) & !is.na(d$poleffic2_W4)
+has_w1 <- !is.na(d$poleffic2_W1) & !is.na(d$poleffic4_W1)
+has_w4 <- !is.na(d$poleffic2_W4) & !is.na(d$poleffic4_W4)
 d$wave <- dplyr::case_when(has_w1 & !has_w4 ~ "W1",
                            has_w4 & !has_w1 ~ "W4",
                            has_w1 & has_w4  ~ "both",
@@ -23,7 +25,7 @@ message("Participants by wave of efficacy measurement:")
 print(table(d$wave, useNA = "ifany"))
 if (any(d$wave == "both", na.rm = TRUE)) {
   warning("Some participants have efficacy in both W1 and W4. ",
-          "Check how poleffic1/poleffic2 were derived upstream; treating them as W1.")
+          "Check how poleffic2/poleffic4 were derived upstream; treating them as W1.")
   d$wave[d$wave == "both"] <- "W1"
 }
 
