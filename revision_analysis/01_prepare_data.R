@@ -38,12 +38,20 @@ survey_data$psid_survey <- id_to_chr(survey_data$psid_survey)
 message("Survey file: ", nrow(survey_data), " rows; ",
         sum(!is.na(survey_data$Internal)), " with Internal efficacy")
 
+# Compare ids in one common format: plain text, without the ",00" suffix, trimmed.
+norm_id <- function(x) trimws(stringr::str_remove_all(id_to_chr(x), ",00"))
+survey_data$psid_survey <- norm_id(survey_data$psid_survey)
+
 if (exists("psid_to_remove")) {
-  survey_data <- survey_data[!survey_data$psid_survey %in% as.character(psid_to_remove), ]
+  remove_ids <- unique(norm_id(psid_to_remove))
+  n_found <- sum(remove_ids %in% survey_data$psid_survey)
+  message("psid_to_remove: ", length(remove_ids), " ids in the list, ", n_found, " found in the survey file")
+  if (n_found == 0) warning("None of the ids in psid_to_remove were found. Compare the formats: ",
+                            "head(psid_to_remove) vs head(survey_data$psid_survey).")
+  survey_data <- survey_data[!survey_data$psid_survey %in% remove_ids, ]
 } else {
   message("psid_to_remove not found: no ids excluded (the original pipeline excluded a list of ids).")
 }
-survey_data$psid_survey <- stringr::str_remove_all(survey_data$psid_survey, ",00")
 
 map_ids <- mapping_consolidated
 map_ids$psid_survey   <- id_to_chr(map_ids$psid_survey)
