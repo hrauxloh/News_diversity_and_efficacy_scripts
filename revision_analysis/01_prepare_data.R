@@ -53,13 +53,23 @@ if (exists("psid_to_remove")) {
   message("psid_to_remove not found: no ids excluded (the original pipeline excluded a list of ids).")
 }
 
+# The tracking id column is called `panelist_id` in the raw tracking table; the original
+# pipeline renames the first column to `psid_tracking`. Do the same here if that hasn't happened.
+ensure_tracking_id <- function(df, what) {
+  if (!"psid_tracking" %in% names(df)) {
+    if ("panelist_id" %in% names(df)) names(df)[names(df) == "panelist_id"] <- "psid_tracking"
+    else { message(what, ": no psid_tracking/panelist_id column; using the first column (", names(df)[1], ")")
+           names(df)[1] <- "psid_tracking" }
+  }
+  df$psid_tracking <- id_to_chr(df$psid_tracking)
+  df
+}
+
 map_ids <- mapping_consolidated
-map_ids$psid_survey   <- id_to_chr(map_ids$psid_survey)
-map_ids$psid_tracking <- id_to_chr(map_ids$psid_tracking)
-tracking_ids <- total_tracking_activity_0_total_june2025
-tracking_ids$psid_tracking <- id_to_chr(tracking_ids$psid_tracking)
-rao_ids <- rao_scores_df
-rao_ids$psid_tracking <- id_to_chr(rao_ids$psid_tracking)
+map_ids$psid_survey <- id_to_chr(map_ids$psid_survey)
+map_ids <- ensure_tracking_id(map_ids, "mapping_consolidated")
+tracking_ids <- ensure_tracking_id(total_tracking_activity_0_total_june2025, "tracking activity")
+rao_ids <- ensure_tracking_id(rao_scores_df, "rao_scores_df")
 
 full <- survey_data %>% left_join(map_ids, by = "psid_survey")
 message("After joining the id mapping: ", sum(!is.na(full$psid_tracking)), " with a tracking id")
