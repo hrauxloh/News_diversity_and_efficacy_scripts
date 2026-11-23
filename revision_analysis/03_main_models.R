@@ -21,7 +21,7 @@ table(analysis_data$gender)
 d <- analysis_data
 
 SPLINE_DF <- 4   # df = 4 puts knots at the 25th/50th/75th percentiles (as in the original models)
-CONTROLS  <- "age_z + gender + edu_z + log_unique_days + offline_z + wave"   # wave = dummy for efficacy survey wave (W4 vs W1)
+CONTROLS  <- "age_z + gender + edu_z + log_unique_days + offline_z + offline_missing + wave"   # wave = dummy for efficacy survey wave (W4 vs W1)
 mk <- function(rhs) as.formula(paste("Internal ~", rhs, "+", CONTROLS))
 
 forms <- list(
@@ -34,7 +34,7 @@ fits <- lapply(forms, lm, data = d)
 
 # --- Model equation (for the Methods) ------------------------------------
 # Internal_i = b0 + f(Rao_i) + g1*Age_i + g2*Gender_i + g3*Education_i
-#              + g4*log(TrackingDays_i) + g5*OfflineNews_i + g6*Wave4_i + e_i
+#              + g4*log(TrackingDays_i) + g5*OfflineNews_i + g6*NoOfflineData_i + g7*Wave4_i + e_i
 # where f() is linear (M1), quadratic (M2) or a natural cubic spline with
 # 3 interior knots at the quartiles of Rao (M3); Rao and continuous controls are z-scored.
 

@@ -12,7 +12,7 @@ source(file.path(if (exists("RA_DIR")) RA_DIR else "revision_analysis", "helpers
 stopifnot(exists("analysis_data"))
 d <- analysis_data
 sd_y <- sd(d$Internal)
-BASE_NO_WAVE <- "age_z + gender + edu_z + log_unique_days + offline_z"
+BASE_NO_WAVE <- "age_z + gender + edu_z + log_unique_days + offline_z + offline_missing"
 BASE <- paste(BASE_NO_WAVE, "+ wave")      # wave dummy (W4 vs W1) in every model
 mk <- function(rhs, controls = BASE) as.formula(paste("Internal ~", rhs, "+", controls))
 # Subsets may contain only one wave; then the dummy cannot be estimated and is dropped.

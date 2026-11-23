@@ -117,6 +117,17 @@ full_data_sample <- full
 
 d <- full_data_sample
 
+# --- Indicator for participants without offline media data ---------------------------------
+# Made by 00_import_clean_survey.R. If survey_data_v2.Rds was created before that change, define
+# offline_missing_ids (survey ids without any offline media answer) in the session instead.
+if (!"offline_missing" %in% names(d)) {
+  if (exists("offline_missing_ids")) {
+    d$offline_missing <- as.numeric(d$psid_survey %in% norm_id(offline_missing_ids))
+    message("offline_missing built from offline_missing_ids: ", sum(d$offline_missing), " participants")
+  } else stop("offline_missing not found. Re-run 00_import_clean_survey.R (updated version), or define ",
+              "offline_missing_ids (character vector of survey ids with no offline media answer).")
+}
+
 # --- Outcome and survey wave ---------------------------------------------
 # Internal efficacy = poleffic2 + poleffic4 (two items on 0-10, range 0-20).
 # Produced by 00_import_clean_survey.R (raw codes 1-11 shifted to 0-10).

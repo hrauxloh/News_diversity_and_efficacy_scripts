@@ -52,6 +52,18 @@ if (is.na(ID_COL)) stop("No ID column found (looked for id_survey, p_0002). Colu
 message("Using ID column: ", ID_COL)
 survey <- survey %>% mutate(across(-all_of(ID_COL), ~ as.numeric(.)))
 
+# --- Indicator: no offline media data -----------------------------------------------
+# The offline media block was answered in wave 2 (wave 4 for a few) and not by everyone. A sum of
+# nothing is 0, so people without any answer would look like "never uses offline news".
+# offline_missing = 1 if none of the 11 offline exposure items has an answer in any wave.
+offline_expo_vars <- paste0(exposure_bases[1:11], "_exposure")
+offline_answered <- Reduce(`|`, lapply(offline_expo_vars, function(v) {
+  m <- as.matrix(dplyr::select(survey, dplyr::matches(paste0("^", v, "(_.*)?$"))))
+  if (ncol(m) == 0) rep(FALSE, nrow(survey)) else rowSums(!is.na(m)) > 0
+}))
+survey$offline_missing <- as.numeric(!offline_answered)
+message("Participants without any offline media answer: ", sum(survey$offline_missing), " of ", nrow(survey))
+
 # --- Aggregate media-use variables across waves ----------------------------------
 row_agg <- function(df, base, how) {
   m <- dplyr::select(df, dplyr::matches(paste0("^", base, "(_.*)?$")))
@@ -80,7 +92,7 @@ stopifnot(all(item_cols %in% names(survey)))
 for (col in item_cols) { message("Cleaning ", col); survey[[col]] <- clean_item(survey[[col]]) }
 
 # --- Keep needed columns --------------------------------------------------------
-columns_list <- c(ID_COL, "age", "edu", "gender", item_cols, exposure_vars, freq_vars)
+columns_list <- c(ID_COL, "age", "edu", "gender", item_cols, exposure_vars, freq_vars, "offline_missing")
 survey_filtered <- survey %>% dplyr::select(all_of(columns_list))
 # The pipeline renames the FIRST column to psid_survey, so the ID must stay first.
 

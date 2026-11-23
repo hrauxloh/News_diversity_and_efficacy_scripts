@@ -25,7 +25,7 @@ d0 <- dplyr::left_join(d0, rao_ideol_df, by = "psid_tracking")
 stopifnot(!anyNA(d0$FunRao_ideol_eq), !anyNA(d0$FunRao_ideol_k1))
 message("Sample: N = ", nrow(d0), " (identical for all versions)")
 
-CONTROLS <- "age_z + gender + edu_z + log_unique_days + offline_z + wave"
+CONTROLS <- "age_z + gender + edu_z + log_unique_days + offline_z + offline_missing + wave"
 mk <- function(rhs) as.formula(paste("Internal ~", rhs, "+", CONTROLS))
 variants <- c(current = "FunRao", ideology_equal_weight = "FunRao_ideol_eq", ideology_k1 = "FunRao_ideol_k1")
 

@@ -25,7 +25,7 @@ d0 <- dplyr::left_join(d0, rao_time_df, by = "psid_tracking")
 stopifnot(!anyNA(d0$FunRao_time_cap), !anyNA(d0$FunRao_time_raw))
 message("Sample: N = ", nrow(d0), " (identical for all versions)")
 
-CONTROLS <- "age_z + gender + edu_z + log_unique_days + offline_z + wave"
+CONTROLS <- "age_z + gender + edu_z + log_unique_days + offline_z + offline_missing + wave"
 mk <- function(rhs) as.formula(paste("Internal ~", rhs, "+", CONTROLS))
 variants <- c(views = "FunRao", time_capped_600s = "FunRao_time_cap", time_uncapped = "FunRao_time_raw")
 
