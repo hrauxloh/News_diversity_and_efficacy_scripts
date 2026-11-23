@@ -5,8 +5,12 @@
 # only up to the point where `rao_scores_df` has been created (about line 102).
 # Run from the repository root.
 #
+# The Rao score is calculated here with our own implementation (rao_own.R), which does not need
+# the SYNCSA package, and is checked against the package scores if `rao_scores_df` exists.
+#
 # Needed in the R session before running:
-#   rao_scores_df                               (participant id + FunRao, from the pipeline)
+#   comm and traits_mat   (participant x outlet visit counts and dummy-coded outlet traits), or
+#                         tracking_data_0 and domain_attributes, from which they are built
 #   total_tracking_activity_0_total_june2025    (psid_tracking, unique_days, first_day, last_day, ...)
 #   mapping_consolidated                        (survey id <-> tracking id), or the file
 #                                               mapping_consolidated.rds in the working directory
@@ -17,10 +21,38 @@ SURVEY_V2 <- if (exists("SURVEY_V2")) SURVEY_V2 else "survey_data_v2.Rds"   # se
 
 # --- Build full_data_sample from the new survey file ------------------------
 stopifnot(file.exists(SURVEY_V2))
-needed <- c("rao_scores_df", "total_tracking_activity_0_total_june2025")
+needed <- c("total_tracking_activity_0_total_june2025")
 missing_obj <- needed[!vapply(needed, exists, logical(1))]
-if (length(missing_obj) > 0) stop("Run the pipeline up to the Rao scores first. Missing: ",
-                                  paste(missing_obj, collapse = ", "))
+if (length(missing_obj) > 0) stop("Missing in the session: ", paste(missing_obj, collapse = ", "))
+
+# --- Rao score: own implementation (rao_own.R), checked against the package ----------------
+source(file.path(if (exists("RA_DIR")) RA_DIR else "revision_analysis", "rao_own.R"))
+RAO_DISTANCE <- "sqrt_gower"      # "sqrt_gower" or "gower" (see rao_own.R)
+RAO_SOURCE   <- "own"             # "own" = use the own implementation; "package" = use rao_scores_df as it is
+if (!(exists("comm") && exists("traits_mat"))) {
+  if (exists("tracking_data_0") && exists("domain_attributes")) {
+    message("comm / traits_mat not found: building them from tracking_data_0 and domain_attributes")
+    ct <- build_comm_traits(tracking_data_0, domain_attributes); comm <- ct$comm; traits_mat <- ct$traits_mat
+  } else stop("Need comm and traits_mat, or tracking_data_0 and domain_attributes, in the session.")
+}
+rao_own <- rao_q(comm, trait_distance(traits_mat, RAO_DISTANCE))
+rao_own_df <- data.frame(psid_tracking = names(rao_own), FunRao = as.numeric(rao_own), stringsAsFactors = FALSE)
+message("Own Rao scores: n = ", nrow(rao_own_df), "; range ", paste(round(range(rao_own_df$FunRao), 3), collapse = " to "),
+        "; mean ", round(mean(rao_own_df$FunRao), 3))
+if (exists("rao_scores_df")) {
+  chk <- do.call(rbind, lapply(c("sqrt_gower", "gower"), function(h)
+    cbind(distance = h, compare_rao(rao_q(comm, trait_distance(traits_mat, h)), rao_scores_df[, 1:2]))))
+  message("Own implementation vs package scores (correlation 1 and ratio 1 = identical):")
+  print(chk, digits = 4)
+  ok <- subset(chk, distance == RAO_DISTANCE)
+  if (RAO_SOURCE == "own" && (ok$correlation < 0.999 || abs(ok$mean_ratio_pkg_over_own - 1) > 0.01)) {
+    stop("The own Rao scores do not match the package scores for distance = '", RAO_DISTANCE,
+         "'. Look at the table above: set RAO_DISTANCE to the variant with correlation 1 and ratio 1, ",
+         "or set RAO_SOURCE <- 'package' and investigate before relying on either.")
+  }
+}
+if (RAO_SOURCE == "own") rao_scores_df <- rao_own_df
+stopifnot(exists("rao_scores_df"))
 if (!exists("mapping_consolidated")) {
   stopifnot(file.exists("mapping_consolidated.rds"))
   mapping_consolidated <- readRDS("mapping_consolidated.rds")
