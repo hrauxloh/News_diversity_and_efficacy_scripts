@@ -23,7 +23,7 @@
 
 RA_DIR <- "revision_analysis_ideology"
 source("revision_analysis/helpers.R")        # the helper functions of the main folder; outputs go to RA_DIR/output
-rm(RA_DIR)   # clear it so that the other folders\' scripts are not sent to the wrong folder
+rm(RA_DIR)   # clear it so that the other folders' scripts are not sent to the wrong folder
 suppressPackageStartupMessages(library(SYNCSA))
 stopifnot(exists("comm"), exists("traits_mat"), exists("outlet_ideology_imputed"))
 stopifnot(all(c("domain", "score_imputed") %in% names(outlet_ideology_imputed)))
