@@ -95,26 +95,24 @@ print(cov_res, digits = 3)
 write.csv(cov_res, file.path(OUT_DIR, "coverage_restrictions.csv"), row.names = FALSE)
 
 # ---- E. Minimum number of qualifying visits (main analysis: more than 30) ---------------
-# Rebuilds the visit matrix and Rao scores for other cut-offs and re-runs script 01 for each in a
-# separate environment (the objects in the session are not changed). Needs tracking_data_0 and
-# domain_attributes in the session (made by 00b_get_tracking_data.R). Scores from very few visits are
-# noisy, so this checks that the choice of 30 does not drive the result.
-if (exists("tracking_data_0") && exists("domain_attributes")) {
-  min_views_grid <- c(10, 30, 50, 100)          # participants need MORE than this many visits
-  min_res <- bind_rows(lapply(min_views_grid, function(mv) {
-    ct <- build_comm_traits(tracking_data_0, domain_attributes, min_views = mv)
-    cm <- ct$comm; attr(cm, "min_active_seconds") <- 3
+# Re-runs script 01 (in a separate environment, so the session objects are not changed) for other
+# minimums and fits the main linear model. Needs comm_all (made by 00b_get_tracking_data.R).
+# Participants need MORE than the stated number of visits; "0" = at least one visit.
+if (exists("comm_all")) {
+  grid <- data.frame(min_views = c(0, 10, 30),
+                     rule = c("at least 1 visit", "more than 10 visits", "more than 30 visits (main)"))
+  min_res <- bind_rows(lapply(seq_len(nrow(grid)), function(i) {
     env <- new.env(parent = globalenv())
-    env$comm <- cm; env$traits_mat <- ct$traits_mat; env$RA_DIR <- RA_DIR
+    env$comm_all <- comm_all; env$MIN_VIEWS_MAIN <- grid$min_views[i]; env$RA_DIR <- RA_DIR
     invisible(utils::capture.output(suppressMessages(suppressWarnings(
       source(file.path(RA_DIR, "01_prepare_data.R"), local = env)))))
     dd <- env$analysis_data
     m <- lm(mk("rao_z"), dd)
-    cbind(min_views = paste0("> ", mv), n_tracked = nrow(cm), mean_rao = mean(dd$FunRao),
+    cbind(rule = grid$rule[i], n_tracked = nrow(env$comm), mean_rao = mean(dd$FunRao),
           focal_term(m, "rao_z", "Rao (per SD)")[, c("n", "estimate", "lwr", "upr", "p")])
   }))
   print(min_res, digits = 3)
   write.csv(min_res, file.path(OUT_DIR, "min_visits_sensitivity.csv"), row.names = FALSE)
 } else {
-  message("Skipping E: tracking_data_0 and domain_attributes are not in the session (run 00b_get_tracking_data.R).")
+  message("Skipping E: comm_all is not in the session (run 00b_get_tracking_data.R).")
 }

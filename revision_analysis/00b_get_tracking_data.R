@@ -6,7 +6,9 @@
 # CHANGE FROM THE ORIGINAL ANALYSIS: a visit now counts only if it lasted at least
 # MIN_ACTIVE_SECONDS = 3 active seconds (before: 2). Everything else is unchanged:
 # news deep links, domains on the outlet list, classified as political (is_pol_ml = 'political'),
-# and participants with more than MIN_VIEWS = 30 such visits.
+# No minimum number of visits is applied here: comm_all contains every participant with at least one
+# qualifying visit. The minimum (main analysis: more than 30 visits) is applied in 01_prepare_data.R, so the
+# robustness checks with other minimums (script 04, section E) can use the same data.
 #
 # Fill in the PLACEHOLDERS below. No password is written in this file: it is read from an
 # environment variable (set it once with usethis::edit_r_environ()).
@@ -19,7 +21,6 @@ library(DBI)
 
 # ---- Settings ---------------------------------------------------------------
 MIN_ACTIVE_SECONDS <- 3     # visit threshold (was 2)
-MIN_VIEWS          <- 30    # participants need MORE than this many visits (unchanged)
 
 # PLACEHOLDERS: server access ---------------------------------------------------
 DB_NAME <- "<DATABASE_NAME>"            # e.g. the tracking database
@@ -75,16 +76,19 @@ dbDisconnect(con_tracking)
 
 # ---- Participant x outlet matrix and traits (as in the original pipeline) -----------
 domain_attributes <- read.csv(DOMAIN_ATTRIBUTES_FILE, stringsAsFactors = FALSE)
-ct <- build_comm_traits(tracking_data_0, domain_attributes, min_views = MIN_VIEWS)
-comm <- ct$comm; traits_mat <- ct$traits_mat
-attr(comm, "min_active_seconds") <- MIN_ACTIVE_SECONDS     # lets script 01 detect stale 2-second objects
-message("Participants with > ", MIN_VIEWS, " visits: ", nrow(comm), "; visits used: ", sum(comm),
-        "; outlets: ", ncol(comm))
+ct <- build_comm_traits(tracking_data_0, domain_attributes, min_views = 0)   # 0 = everyone with >= 1 visit
+comm_all <- ct$comm; traits_mat <- ct$traits_mat
+attr(comm_all, "min_active_seconds") <- MIN_ACTIVE_SECONDS     # lets script 01 detect stale 2-second objects
+comm <- comm_all
+vis <- rowSums(comm_all)
+message("Participants with at least 1 visit: ", sum(vis >= 1), "; more than 10: ", sum(vis > 10),
+        "; more than 30 (main analysis): ", sum(vis > 30), "; visits in total: ", sum(comm_all),
+        "; outlets: ", ncol(comm_all))
 message("(2-second analysis for comparison: 1,220 participants, 433,831 visits)")
 
 # ---- Save (outside the repository) -----------------------------------------------------
 saveRDS(tracking_data_0, file.path(TRACKING_OUT_DIR, "tracking_data_0_3s.rds"))
-saveRDS(comm,            file.path(TRACKING_OUT_DIR, "comm_3s.rds"))
+saveRDS(comm_all,        file.path(TRACKING_OUT_DIR, "comm_all_3s.rds"))
 saveRDS(traits_mat,      file.path(TRACKING_OUT_DIR, "traits_mat.rds"))
 saveRDS(domain_attributes, file.path(TRACKING_OUT_DIR, "domain_attributes.rds"))
 message("Saved to ", TRACKING_OUT_DIR)

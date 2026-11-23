@@ -29,19 +29,29 @@ if (length(missing_obj) > 0) stop("Missing in the session: ", paste(missing_obj,
 source(file.path(if (exists("RA_DIR")) RA_DIR else "revision_analysis", "rao_own.R"))
 RAO_DISTANCE <- "sqrt_gower"      # "sqrt_gower" or "gower" (see rao_own.R)
 RAO_SOURCE   <- "own"             # "own" = use the own implementation; "package" = use rao_scores_df as it is
-# Guard against stale objects: comm from the old 2-second analysis would silently give the old results.
-if (exists("comm") && !identical(attr(comm, "min_active_seconds"), 3)) {
-  stop("`comm` was not built with the 3-second threshold (no tag from 00b_get_tracking_data.R). ",
-       "Run revision_analysis/00b_get_tracking_data.R, or rm(comm, traits_mat, rao_scores_df) and load the saved comm_3s.rds.")
+# Minimum number of qualifying visits: participants need MORE than MIN_VIEWS_MAIN visits (main analysis: 30).
+# Script 04 (section E) re-runs this script with other values.
+if (!exists("MIN_VIEWS_MAIN")) MIN_VIEWS_MAIN <- 30
+# comm_all = all participants with >= 1 visit (made by 00b_get_tracking_data.R); comm = the analysed subset.
+if (!exists("comm_all")) {
+  if (exists("comm")) comm_all <- comm
+  else if (exists("tracking_data_0") && exists("domain_attributes")) {
+    message("comm_all not found: building it from tracking_data_0 and domain_attributes")
+    ct <- build_comm_traits(tracking_data_0, domain_attributes, min_views = 0)
+    comm_all <- ct$comm; traits_mat <- ct$traits_mat
+    attr(comm_all, "min_active_seconds") <- 3
+  } else stop("Need comm_all (from 00b_get_tracking_data.R) or tracking_data_0 and domain_attributes.")
 }
+# Guard against stale objects: a visit matrix from the old 2-second analysis would silently give the old results.
+if (!identical(attr(comm_all, "min_active_seconds"), 3)) {
+  stop("The visit matrix was not built with the 3-second threshold (no tag from 00b_get_tracking_data.R). ",
+       "Run revision_analysis/00b_get_tracking_data.R (or rm(comm, comm_all, traits_mat, rao_scores_df) and load comm_all_3s.rds).")
+}
+if (!exists("traits_mat")) stop("traits_mat not found (made by 00b_get_tracking_data.R).")
+comm <- comm_all[rowSums(comm_all) > MIN_VIEWS_MAIN, , drop = FALSE]
+message("Participants with more than ", MIN_VIEWS_MAIN, " qualifying visits: ", nrow(comm), " of ", nrow(comm_all))
 if (exists("rao_scores_df", inherits = FALSE) && exists("comm") && !all(rownames(comm) %in% rao_scores_df$psid_tracking)) {
   rm(rao_scores_df)   # old package scores belong to another set of participants
-}
-if (!(exists("comm") && exists("traits_mat"))) {
-  if (exists("tracking_data_0") && exists("domain_attributes")) {
-    message("comm / traits_mat not found: building them from tracking_data_0 and domain_attributes")
-    ct <- build_comm_traits(tracking_data_0, domain_attributes); comm <- ct$comm; traits_mat <- ct$traits_mat
-  } else stop("Need comm and traits_mat, or tracking_data_0 and domain_attributes, in the session.")
 }
 rao_own <- rao_q(comm, trait_distance(traits_mat, RAO_DISTANCE))
 rao_own_df <- data.frame(psid_tracking = names(rao_own), FunRao = as.numeric(rao_own), stringsAsFactors = FALSE)
