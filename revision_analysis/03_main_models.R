@@ -60,6 +60,9 @@ print(nested, digits = 4)
 write.csv(nested, file.path(OUT_DIR, "nested_tests.csv"), row.names = FALSE)
 
 # --- Robust (HC3) coefficients -------------------------------------------
+coef_all <- dplyr::bind_rows(lapply(names(fits), function(nm) cbind(model = nm, robust_table(fits[[nm]]))))
+write.csv(coef_all, file.path(OUT_DIR, "coefficients_all_models_robust.csv"), row.names = FALSE)   # for Table 1
+print(coef_all, digits = 3)
 write.csv(robust_table(fits$M1_linear),    file.path(OUT_DIR, "coefs_M1_linear_robust.csv"),    row.names = FALSE)
 write.csv(robust_table(fits$M2_quadratic), file.path(OUT_DIR, "coefs_M2_quadratic_robust.csv"), row.names = FALSE)
 

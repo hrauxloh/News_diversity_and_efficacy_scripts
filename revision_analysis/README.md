@@ -57,3 +57,16 @@ Packages: dplyr, splines, ggplot2, sandwich, lmtest, SYNCSA.
    (two columns differ) as Center vs Left or Right (one column). State this in the Methods or change the coding.
 6. `social_freq` and `socialmedia_freq` are assumed to be interpersonal political talk and social media use,
    inferred from the column names. Check the questionnaire.
+
+## Saving the output so it can be shared
+Run a script with `run_logged()` instead of `source()`; it saves everything the script prints to
+`revision_analysis/output/log_<script>.txt` (and the package versions, e.g. of SYNCSA):
+
+```r
+source("revision_analysis/run_logged.R")
+run_logged("revision_analysis/01_prepare_data.R")
+run_logged("revision_analysis/03_main_models.R")
+run_logged("revision_analysis/04_wave_and_robustness.R")
+```
+The csv tables the scripts write (model comparison, coefficients of all models, contrasts, robustness) are in the same
+output folder. No data set is saved. Check the files before sharing them.
