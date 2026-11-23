@@ -7,6 +7,7 @@
 #   B. Extra controls and exposure volume
 #   C. Alternative / component diversity measures (comments 3, 7)
 #   D. Tracking-coverage restrictions (previously "Samples 2 and 3")
+#   E. Minimum number of qualifying visits for a participant (main analysis: more than 30)
 
 source(file.path(if (exists("RA_DIR")) RA_DIR else "revision_analysis", "helpers.R"))
 stopifnot(exists("analysis_data"))
@@ -92,3 +93,28 @@ cov_res <- bind_rows(lapply(c(0, 50, 150), function(min_days) {
 }))
 print(cov_res, digits = 3)
 write.csv(cov_res, file.path(OUT_DIR, "coverage_restrictions.csv"), row.names = FALSE)
+
+# ---- E. Minimum number of qualifying visits (main analysis: more than 30) ---------------
+# Rebuilds the visit matrix and Rao scores for other cut-offs and re-runs script 01 for each in a
+# separate environment (the objects in the session are not changed). Needs tracking_data_0 and
+# domain_attributes in the session (made by 00b_get_tracking_data.R). Scores from very few visits are
+# noisy, so this checks that the choice of 30 does not drive the result.
+if (exists("tracking_data_0") && exists("domain_attributes")) {
+  min_views_grid <- c(10, 30, 50, 100)          # participants need MORE than this many visits
+  min_res <- bind_rows(lapply(min_views_grid, function(mv) {
+    ct <- build_comm_traits(tracking_data_0, domain_attributes, min_views = mv)
+    cm <- ct$comm; attr(cm, "min_active_seconds") <- 3
+    env <- new.env(parent = globalenv())
+    env$comm <- cm; env$traits_mat <- ct$traits_mat; env$RA_DIR <- RA_DIR
+    invisible(utils::capture.output(suppressMessages(suppressWarnings(
+      source(file.path(RA_DIR, "01_prepare_data.R"), local = env)))))
+    dd <- env$analysis_data
+    m <- lm(mk("rao_z"), dd)
+    cbind(min_views = paste0("> ", mv), n_tracked = nrow(cm), mean_rao = mean(dd$FunRao),
+          focal_term(m, "rao_z", "Rao (per SD)")[, c("n", "estimate", "lwr", "upr", "p")])
+  }))
+  print(min_res, digits = 3)
+  write.csv(min_res, file.path(OUT_DIR, "min_visits_sensitivity.csv"), row.names = FALSE)
+} else {
+  message("Skipping E: tracking_data_0 and domain_attributes are not in the session (run 00b_get_tracking_data.R).")
+}

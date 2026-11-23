@@ -34,7 +34,7 @@ if (exists("comm") && !identical(attr(comm, "min_active_seconds"), 3)) {
   stop("`comm` was not built with the 3-second threshold (no tag from 00b_get_tracking_data.R). ",
        "Run revision_analysis/00b_get_tracking_data.R, or rm(comm, traits_mat, rao_scores_df) and load the saved comm_3s.rds.")
 }
-if (exists("rao_scores_df") && exists("comm") && !all(rownames(comm) %in% rao_scores_df$psid_tracking)) {
+if (exists("rao_scores_df", inherits = FALSE) && exists("comm") && !all(rownames(comm) %in% rao_scores_df$psid_tracking)) {
   rm(rao_scores_df)   # old package scores belong to another set of participants
 }
 if (!(exists("comm") && exists("traits_mat"))) {
@@ -47,7 +47,7 @@ rao_own <- rao_q(comm, trait_distance(traits_mat, RAO_DISTANCE))
 rao_own_df <- data.frame(psid_tracking = names(rao_own), FunRao = as.numeric(rao_own), stringsAsFactors = FALSE)
 message("Own Rao scores: n = ", nrow(rao_own_df), "; range ", paste(round(range(rao_own_df$FunRao), 3), collapse = " to "),
         "; mean ", round(mean(rao_own_df$FunRao), 3))
-if (exists("rao_scores_df")) {
+if (exists("rao_scores_df", inherits = FALSE)) {
   chk <- do.call(rbind, lapply(c("sqrt_gower", "gower"), function(h)
     cbind(distance = h, compare_rao(rao_q(comm, trait_distance(traits_mat, h)), rao_scores_df[, 1:2]))))
   message("Own implementation vs package scores (correlation 1 and ratio 1 = identical):")
@@ -60,7 +60,7 @@ if (exists("rao_scores_df")) {
   }
 }
 if (RAO_SOURCE == "own") rao_scores_df <- rao_own_df
-stopifnot(exists("rao_scores_df"))
+stopifnot(exists("rao_scores_df", inherits = FALSE))
 if (!exists("mapping_consolidated")) {
   stopifnot(file.exists("mapping_consolidated.rds"))
   mapping_consolidated <- readRDS("mapping_consolidated.rds")

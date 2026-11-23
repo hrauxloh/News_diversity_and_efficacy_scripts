@@ -53,6 +53,7 @@ Packages: dplyr, splines, ggplot2, sandwich, lmtest, SYNCSA.
 | (12) spline vs linear | Nested F-tests, AIC, BIC and repeated 10-fold cross-validated RMSE for all models (`model_comparison.csv`, `nested_tests.csv`); sensitivity to spline df 2 to 6. |
 | (9) wave and timing | A wave dummy (W4 vs W1) is included in every model. Efficacy is treated as stable over time, so there are **no** wave-specific models, no diversity x wave interaction and no timing-based restriction of the tracking data. Only about 6% of the sample (44 of 742 with efficacy data) answered in wave 4. `wave_dummy_check.csv` shows whether adding the dummy changes the diversity estimate. The inter-item correlation of the two efficacy items is printed by script 03. |
 | (3), (7) what the measure captures | Shannon, Gini-Simpson, number of outlets, and Rao split into news-type-only and ideology-only versions; joint models and Rao controlling for Shannon plus outlet count (`alternative_measures.csv`). |
+| Minimum visits | Section E of script 04 repeats the analysis with participants needing more than 10, 30 (main), 50 or 100 qualifying visits (`min_visits_sensitivity.csv`); needs `tracking_data_0` and `domain_attributes` from 00b. |
 | Forking paths | The three "samples" become coverage restrictions in an appendix-style table (`coverage_restrictions.csv`) instead of choosing the best-performing sample. |
 
 ## Things in the existing code worth checking
