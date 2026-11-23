@@ -10,6 +10,18 @@
 
 source(file.path(if (exists("RA_DIR")) RA_DIR else "revision_analysis", "helpers.R"))
 stopifnot(exists("analysis_data"))
+# The extra-controls and alternative-measure analyses need columns made by 02_alt_diversity_measures.R
+# (log_visits_z, shannon_z, outlets_z, rao_type_z, rao_ideol_z). Run it here if they are missing.
+alt_cols <- c("log_visits_z", "shannon_z", "outlets_z", "rao_type_z", "rao_ideol_z")
+if (!all(alt_cols %in% names(analysis_data))) {
+  if (exists("comm") && exists("traits_mat")) {
+    message("Columns from 02_alt_diversity_measures.R are missing: running that script first.")
+    source(file.path(if (exists("RA_DIR")) RA_DIR else "revision_analysis", "02_alt_diversity_measures.R"))
+  } else {
+    stop("analysis_data lacks ", paste(setdiff(alt_cols, names(analysis_data)), collapse = ", "),
+         ". Make `comm` and `traits_mat` available and run 02_alt_diversity_measures.R first.")
+  }
+}
 d <- analysis_data
 sd_y <- sd(d$Internal)
 BASE_NO_WAVE <- "age_z + gender + edu_z + log_unique_days + offline_z + offline_missing"
