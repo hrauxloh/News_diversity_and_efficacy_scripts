@@ -18,7 +18,7 @@
 # repository; the cleaned file is saved wherever you set OUT_FILE.
 
 library(dplyr)
-
+source("C:/Users/rauxloha/poltrack2/Diversity_Paper/preprocessing/SQL_query_function.R")
 ZERO_AS_MISSING <- TRUE    # TRUE: invalid 0 -> NA (7 values seen in wave 1). FALSE: 0 -> lowest category.
 OUT_FILE <- "survey_data_v2.Rds"   # choose a path OUTSIDE the git repository
 
