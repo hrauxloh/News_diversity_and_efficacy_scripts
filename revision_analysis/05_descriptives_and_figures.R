@@ -18,7 +18,9 @@ sm <- function(x) c(mean = mean(x), sd = sd(x), median = median(x))
 table2 <- do.call(rbind, lapply(split(d, d$quartile), function(g) {
   data.frame(quartile = g$quartile[1], n = nrow(g),
              rao_min = min(g$FunRao), rao_max = max(g$FunRao),
+             visits_min = min(g$n_visits), visits_max = max(g$n_visits),
              visits_mean = mean(g$n_visits), visits_sd = sd(g$n_visits), visits_median = median(g$n_visits),
+             outlets_min = min(g$n_outlets), outlets_max = max(g$n_outlets),
              outlets_mean = mean(g$n_outlets), outlets_sd = sd(g$n_outlets), outlets_median = median(g$n_outlets),
              efficacy_mean = mean(g$Internal), efficacy_sd = sd(g$Internal))
 }))
