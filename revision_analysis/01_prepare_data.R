@@ -29,6 +29,14 @@ if (length(missing_obj) > 0) stop("Missing in the session: ", paste(missing_obj,
 source(file.path(if (exists("RA_DIR")) RA_DIR else "revision_analysis", "rao_own.R"))
 RAO_DISTANCE <- "sqrt_gower"      # "sqrt_gower" or "gower" (see rao_own.R)
 RAO_SOURCE   <- "own"             # "own" = use the own implementation; "package" = use rao_scores_df as it is
+# Guard against stale objects: comm from the old 2-second analysis would silently give the old results.
+if (exists("comm") && !identical(attr(comm, "min_active_seconds"), 3)) {
+  stop("`comm` was not built with the 3-second threshold (no tag from 00b_get_tracking_data.R). ",
+       "Run revision_analysis/00b_get_tracking_data.R, or rm(comm, traits_mat, rao_scores_df) and load the saved comm_3s.rds.")
+}
+if (exists("rao_scores_df") && exists("comm") && !all(rownames(comm) %in% rao_scores_df$psid_tracking)) {
+  rm(rao_scores_df)   # old package scores belong to another set of participants
+}
 if (!(exists("comm") && exists("traits_mat"))) {
   if (exists("tracking_data_0") && exists("domain_attributes")) {
     message("comm / traits_mat not found: building them from tracking_data_0 and domain_attributes")

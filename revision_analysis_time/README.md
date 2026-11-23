@@ -18,7 +18,7 @@ source("revision_analysis_time/02_compare_models.R")
 ```
 
 ## Choices fixed in advance
-- Same filters as the main analysis (news deep links, at least 2 active seconds, classified political).
+- Same filters as the main analysis (news deep links, at least 3 active seconds, classified political).
 - **Primary version:** each visit capped at 600 s (about the 99th percentile of `active_seconds`, 616 s).
   A few visits last hours (maximum 83,125 s), probably tabs left open.
 - **Sensitivity version:** no cap.

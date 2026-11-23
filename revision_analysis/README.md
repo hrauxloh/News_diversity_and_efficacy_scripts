@@ -15,6 +15,16 @@ internal item. `00_import_clean_survey.R` defines `Internal = poleffic2 + poleff
 against the codebook wording of the two items), drops External, and shifts the raw 1-11 codes to 0-10
 (so Internal runs 0-20). **All earlier results (Table 1 etc.) used the old outcome and must be re-run.**
 
+## 3-second threshold (new)
+A visit now counts if it lasted at least **3 active seconds** (original analysis: 2). `00b_get_tracking_data.R`
+downloads the visits with this threshold (server access and file paths are placeholders to fill in; the password is
+read from an environment variable), builds `comm` and `traits_mat`, tags `comm` with the threshold and saves them
+outside the repository. `01_prepare_data.R` stops if `comm` does not carry the 3-second tag, so old 2-second objects
+cannot be reused by mistake. Order of the run: `00b` -> `01` -> `02` -> `03` -> `04`
+(`rm(list = ls())` first, then keep only what 01 needs: `total_tracking_activity_0_total_june2025`, `mapping_consolidated`).
+`unique_days` comes from `total_tracking_activity_0_total_june2025`; check whether that file was built with the
+2-second filter (see the comment in 00b).
+
 ## How to run
 1. Re-import the survey with `00_import_clean_survey.R` (needs your `con_survey` and
    `SQL_query_function`) and save `survey_data_v2.Rds` outside the repository.

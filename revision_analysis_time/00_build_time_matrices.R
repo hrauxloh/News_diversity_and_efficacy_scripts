@@ -7,7 +7,7 @@
 # Creates: comm_seconds_capped (primary), comm_seconds_raw (sensitivity).
 #
 # Choices fixed in advance:
-#   * same filters as the main analysis: news deep links, at least 2 active seconds,
+#   * same filters as the main analysis: news deep links, at least MIN_ACTIVE_SECONDS (3) active seconds,
 #     classified as political (is_pol_ml = 'political')
 #   * the time of a single visit is capped at CAP_SECONDS (600 s = about the 99th percentile
 #     of active_seconds, 616 s) in the primary version, because a few visits last hours
@@ -16,6 +16,7 @@
 library(dplyr); library(tidyr); library(tibble); library(DBI)
 stopifnot(exists("con_tracking"), exists("domain_attributes"), exists("comm"))
 CAP_SECONDS <- 600
+if (!exists("MIN_ACTIVE_SECONDS")) MIN_ACTIVE_SECONDS <- 3   # same threshold as the main analysis (set in 00b_get_tracking_data.R)
 
 domains <- paste(DBI::dbQuoteString(con_tracking, trimws(domain_attributes$domain)), collapse = ",")
 query_time <- paste0("
@@ -27,7 +28,7 @@ query_time <- paste0("
   JOIN content_new c ON v.url_hash = c.url_hash
   WHERE v.domain IN (", domains, ")
     AND v.is_news_deep_link = TRUE
-    AND v.active_seconds >= 2
+    AND v.active_seconds >= ", MIN_ACTIVE_SECONDS, "
     AND c.is_pol_ml = 'political'
   GROUP BY 1, 2")
 tm <- dbGetQuery(con_tracking, query_time)
