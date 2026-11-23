@@ -78,6 +78,7 @@ source("revision_analysis/run_logged.R")
 run_logged("revision_analysis/01_prepare_data.R")
 run_logged("revision_analysis/03_main_models.R")
 run_logged("revision_analysis/04_wave_and_robustness.R")
+run_logged("revision_analysis/05_descriptives_and_figures.R")   # Table 2, Figure 1
 ```
 The csv tables the scripts write (model comparison, coefficients of all models, contrasts, robustness) are in the same
 output folder. No data set is saved. Check the files before sharing them.
