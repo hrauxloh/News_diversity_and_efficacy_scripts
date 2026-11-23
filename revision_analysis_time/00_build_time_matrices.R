@@ -20,9 +20,9 @@ CAP_SECONDS <- 600
 domains <- paste(DBI::dbQuoteString(con_tracking, trimws(domain_attributes$domain)), collapse = ",")
 query_time <- paste0("
   SELECT v.panelist_id AS psid_tracking, v.domain,
-         COUNT(*)                                   AS n_views,
-         SUM(v.active_seconds)                      AS total_seconds,
-         SUM(LEAST(v.active_seconds, ", CAP_SECONDS, ")) AS total_seconds_capped
+         COUNT(*)::float8                                    AS n_views,
+         SUM(v.active_seconds)::float8                       AS total_seconds,
+         SUM(LEAST(v.active_seconds, ", CAP_SECONDS, "))::float8 AS total_seconds_capped
   FROM views_new v
   JOIN content_new c ON v.url_hash = c.url_hash
   WHERE v.domain IN (", domains, ")
@@ -32,6 +32,9 @@ query_time <- paste0("
   GROUP BY 1, 2")
 tm <- dbGetQuery(con_tracking, query_time)
 tm$psid_tracking <- as.character(tm$psid_tracking)
+# COUNT/SUM return 64-bit integers in Postgres (class integer64 in R), which turn into garbage when
+# reshaped into a matrix. They are cast to double in the SQL above; this line is a second safeguard.
+for (col in c("n_views", "total_seconds", "total_seconds_capped")) tm[[col]] <- as.numeric(as.character(tm[[col]]))
 tm <- tm %>% filter(psid_tracking %in% rownames(comm))
 
 to_matrix <- function(col) {
@@ -45,6 +48,7 @@ comm_seconds_raw    <- to_matrix("total_seconds")
 comm_seconds_capped <- to_matrix("total_seconds_capped")
 
 # Checks (all should be TRUE)
+message("Total visits: new query ", sum(comm_views_check), " vs comm ", sum(comm))
 message("Visit counts identical to comm:        ", isTRUE(all(comm_views_check == as.matrix(comm))))
 message("Same participant x domain cells used:  ", isTRUE(all((comm_seconds_raw > 0) == (as.matrix(comm) > 0))))
 message("No participant with zero time:         ", all(rowSums(comm_seconds_capped) > 0))
