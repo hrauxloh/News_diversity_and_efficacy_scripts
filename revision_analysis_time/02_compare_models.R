@@ -11,6 +11,7 @@
 
 RA_DIR <- "revision_analysis_time"
 source("revision_analysis/helpers.R")
+rm(RA_DIR)   # clear it so that the other folders\' scripts are not sent to the wrong folder
 stopifnot(exists("analysis_data"), exists("rao_time_df"))
 
 d0 <- analysis_data

@@ -7,6 +7,7 @@
 
 RA_DIR <- "revision_analysis_time"
 source("revision_analysis/helpers.R")
+rm(RA_DIR)   # clear it so that the other folders\' scripts are not sent to the wrong folder
 suppressPackageStartupMessages(library(SYNCSA))
 stopifnot(exists("comm_seconds_capped"), exists("comm_seconds_raw"), exists("traits_mat"))
 
