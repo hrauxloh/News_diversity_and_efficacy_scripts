@@ -32,6 +32,11 @@ forms <- list(
 )
 fits <- lapply(forms, lm, data = d)
 
+# Diversity-only model (no controls): the unadjusted association, shown next to the fully controlled one
+# (reviewer request). Kept outside `fits` so the curves and contrasts below are unchanged.
+form_unadj <- as.formula("Internal ~ rao_z")
+fit_unadj  <- lm(form_unadj, data = d)
+
 # --- Model equation (for the Methods) ------------------------------------
 # Internal_i = b0 + f(Rao_i) + g1*Age_i + g2*Gender_i + g3*Education_i
 #              + g4*log(TrackingDays_i) + g5*OfflineNews_i + g6*NoOfflineData_i + g7*Wave4_i + e_i
@@ -48,6 +53,10 @@ cmp <- data.frame(
   cv_rmse = sapply(forms, cv_rmse, data = d),
   row.names = NULL
 )
+cmp <- rbind(cmp, data.frame(
+  model = "M_diversity_only", n_par = length(coef(fit_unadj)) + 1,
+  adj_r2 = summary(fit_unadj)$adj.r.squared, AIC = AIC(fit_unadj), BIC = BIC(fit_unadj),
+  cv_rmse = cv_rmse(form_unadj, d)))
 print(cmp, digits = 4)
 write.csv(cmp, file.path(OUT_DIR, "model_comparison.csv"), row.names = FALSE)
 
@@ -61,10 +70,14 @@ write.csv(nested, file.path(OUT_DIR, "nested_tests.csv"), row.names = FALSE)
 
 # --- Robust (HC3) coefficients -------------------------------------------
 coef_all <- dplyr::bind_rows(lapply(names(fits), function(nm) cbind(model = nm, robust_table(fits[[nm]]))))
+coef_all <- dplyr::bind_rows(coef_all, cbind(model = "M_diversity_only", robust_table(fit_unadj)))
 write.csv(coef_all, file.path(OUT_DIR, "coefficients_all_models_robust.csv"), row.names = FALSE)   # for Table 1
 print(coef_all, digits = 3)
 write.csv(robust_table(fits$M1_linear),    file.path(OUT_DIR, "coefs_M1_linear_robust.csv"),    row.names = FALSE)
 write.csv(robust_table(fits$M2_quadratic), file.path(OUT_DIR, "coefs_M2_quadratic_robust.csv"), row.names = FALSE)
+write.csv(robust_table(fit_unadj), file.path(OUT_DIR, "coefs_M_diversity_only_robust.csv"), row.names = FALSE)
+message("Diversity only (no controls): b = ", round(coef(fit_unadj)["rao_z"], 3),
+        ", robust p = ", signif(robust_table(fit_unadj)$`Pr(>|t|)`[2], 3))
 
 # Turning point of the quadratic (in SDs of Rao) and whether it falls inside the data
 b <- coef(fits$M2_quadratic)

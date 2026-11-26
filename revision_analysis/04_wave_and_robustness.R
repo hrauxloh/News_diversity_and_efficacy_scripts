@@ -94,6 +94,26 @@ cov_res <- bind_rows(lapply(c(0, 50, 150), function(min_days) {
 print(cov_res, digits = 3)
 write.csv(cov_res, file.path(OUT_DIR, "coverage_restrictions.csv"), row.names = FALSE)
 
+# Full model tables (M0 to M3) for the 50- and 150-day subsamples (appendix tables B and C).
+# rao_z keeps the standardisation of the full sample, so the coefficients are comparable with Table 1.
+cov_full <- lapply(c(50, 150), function(min_days) {
+  dd <- droplevels(subset(d, unique_days >= min_days)); cc <- ctrl_for(dd)
+  fs <- list(M0_controls  = mk("1", cc),
+             M1_linear    = mk("rao_z", cc),
+             M2_quadratic = mk("rao_z + I(rao_z^2)", cc),
+             M3_spline    = mk("ns(rao_z, df = 4)", cc))
+  fm <- lapply(fs, lm, data = dd)
+  list(coefs = bind_rows(lapply(names(fm), function(nm) cbind(min_days = min_days, model = nm, robust_table(fm[[nm]])))),
+       fit   = data.frame(min_days = min_days, model = names(fm), n = nobs(fm[[1]]),
+                          adj_r2 = sapply(fm, function(m) summary(m)$adj.r.squared),
+                          AIC = sapply(fm, AIC), BIC = sapply(fm, BIC), row.names = NULL))
+})
+coverage_coefs <- bind_rows(lapply(cov_full, `[[`, "coefs"))
+coverage_fit   <- bind_rows(lapply(cov_full, `[[`, "fit"))
+print(coverage_fit, digits = 4)
+write.csv(coverage_coefs, file.path(OUT_DIR, "coverage_models_coefficients.csv"), row.names = FALSE)
+write.csv(coverage_fit,   file.path(OUT_DIR, "coverage_models_fit.csv"),          row.names = FALSE)
+
 # ---- E. Minimum number of qualifying visits (main analysis: more than 30) ---------------
 # Re-runs script 01 (in a separate environment, so the session objects are not changed) for other
 # minimums and fits the main linear model. Needs comm_all (made by 00b_get_tracking_data.R).

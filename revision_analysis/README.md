@@ -54,6 +54,8 @@ Packages: dplyr, splines, ggplot2, sandwich, lmtest, SYNCSA.
 | (9) wave and timing | A wave dummy (W4 vs W1) is included in every model. Efficacy is treated as stable over time, so there are **no** wave-specific models, no diversity x wave interaction and no timing-based restriction of the tracking data. Only about 6% of the sample (44 of 742 with efficacy data) answered in wave 4. `wave_dummy_check.csv` shows whether adding the dummy changes the diversity estimate. The inter-item correlation of the two efficacy items is printed by script 03. |
 | (3), (7) what the measure captures | Shannon, Gini-Simpson, number of outlets, and Rao split into news-type-only and ideology-only versions; joint models and Rao controlling for Shannon plus outlet count (`alternative_measures.csv`). |
 | Minimum visits | Section E of script 04 repeats the main model with participants needing at least 1, more than 10, or more than 30 (main analysis) qualifying visits (`min_visits_sensitivity.csv`); needs `comm_all` from 00b. |
+| Reviewer: diversity-only model | Script 03 adds `M_diversity_only` (Internal ~ Rao, no controls) to the model comparison and coefficient csv files. |
+| Appendix tables B and C | Script 04 (section D) writes full M0 to M3 tables for the 50- and 150-day subsamples (`coverage_models_coefficients.csv`, `coverage_models_fit.csv`). |
 | Forking paths | The three "samples" become coverage restrictions in an appendix-style table (`coverage_restrictions.csv`) instead of choosing the best-performing sample. |
 
 ## Things in the existing code worth checking
