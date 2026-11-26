@@ -128,8 +128,13 @@ if (exists("comm_all")) {
       source(file.path(RA_DIR, "01_prepare_data.R"), local = env)))))
     dd <- env$analysis_data
     m <- lm(mk("rao_z"), dd)
-    cbind(rule = grid$rule[i], n_tracked = nrow(env$comm), mean_rao = mean(dd$FunRao),
-          focal_term(m, "rao_z", "Rao (per SD)")[, c("n", "estimate", "lwr", "upr", "p")])
+    sd_rao <- sd(dd$FunRao)                       # rao_z is standardised within each sample, so the SD differs
+    ft <- focal_term(m, "rao_z", "Rao (per SD)")
+    cbind(rule = grid$rule[i], n_tracked = nrow(env$comm), mean_rao = mean(dd$FunRao), sd_rao = sd_rao,
+          ft[, c("n", "estimate", "lwr", "upr", "p")],
+          # same estimate in raw Rao units (per 0.1 points of Rao), comparable across the three samples
+          est_per_0.1_rao = ft$estimate * 0.1 / sd_rao,
+          lwr_per_0.1_rao = ft$lwr * 0.1 / sd_rao, upr_per_0.1_rao = ft$upr * 0.1 / sd_rao)
   }))
   print(min_res, digits = 3)
   write.csv(min_res, file.path(OUT_DIR, "min_visits_sensitivity.csv"), row.names = FALSE)
